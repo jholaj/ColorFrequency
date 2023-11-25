@@ -4,18 +4,17 @@ use std::collections::HashMap;
 
 use gtk4 as gtk;
 use gtk::prelude::*;
-use gtk::{glib, Application, ApplicationWindow};
+use gtk::{glib, Application, ApplicationWindow, Box, Image};
 
 
 
 fn main() {
-    let filename: &str = "soho.jpg";
+    let filename: &str = "file";
     // terminal approach
     //let args: Vec<String> = env::args().collect();
     // load canvas with image
+    // attempt to add with overflow with big picture?
     canvas(filename.to_string());
-    let image_colors = load_image_colors(filename);
-    find_dominant_colors(image_colors);
 }
 
 // argument of function & return type
@@ -33,22 +32,30 @@ fn load_image_colors(str_path : &str) -> Vec<Rgba<u8>> {
     pixel_colors
 }
 
-fn find_dominant_colors(pixel_colors: Vec<Rgba<u8>>){
+fn find_dominant_colors(pixel_colors: Vec<Rgba<u8>>) -> Vec<Rgba<u8>>{
     println!("Finding dominant colors...");
+    let mut colors_frequency: HashMap<Rgba<u8>, i16> = HashMap::new();
+    
     // dict
     // key <color> : value <frequency>
     // if key in dict => value + 1
     // else 
     // add key
     // dict unsorted => convert to vec
-    let mut colors_frequency: HashMap<Rgba<u8>, i16> = HashMap::new();
+    /* 
 
+    // old way
     for color in pixel_colors{
         if colors_frequency.contains_key(&color){
             *colors_frequency.get_mut(&color).unwrap() += 1;
         } else {
             colors_frequency.insert(color, 0);
         }
+    }
+    */
+    // refactor
+    for color in &pixel_colors {
+        *colors_frequency.entry(*color).or_insert(0) += 1;
     }
 
     // convert
@@ -58,20 +65,24 @@ fn find_dominant_colors(pixel_colors: Vec<Rgba<u8>>){
     colors_vec.sort_by(|a, b| b.1.cmp(a.1));
 
     // first 100
-    for (key, value) in colors_vec.iter().take(100) {
-        println!("{:?}: {}", key, value);
-    }
+    colors_vec.iter().take(100).map(|(color, _)| *color.clone()).collect()
+
+}
+
+fn load_picture_info(filename: String) -> Vec<Rgba<u8>> {
+    let image_colors = load_image_colors(&filename);
+    find_dominant_colors(image_colors)
 }
 
 // GTK4
-// .dektop file
 fn canvas(filename: String) -> glib::ExitCode {
     let app = Application::builder()
         .application_id("org.example.ICFA")
         .build();
-
+    
     app.connect_activate(move |app| {
-        // We create the main window.
+
+        // main window.
         let window = ApplicationWindow::builder()
             .application(app)
             .default_width(600)
@@ -79,19 +90,36 @@ fn canvas(filename: String) -> glib::ExitCode {
             .title("Image Color Frequency Analyzer")
             .build();
 
-        // Create a new Image widget and set the image file.
-        let image = gtk::Image::from_file(&filename);
+        // image widgets
+        let main_box = Box::new(gtk::Orientation::Vertical, 0);
+        let image = Image::from_file(&filename);
+        image.set_size_request(1000, 500);
+        main_box.append(&image);
 
-        // Add the image to the window.
-        window.set_child(Some(&image));
+        let colors: Vec<Rgba<u8>> = load_picture_info(filename.to_string());
+
+        let color_list = Box::new(gtk::Orientation::Horizontal, 0);
+        
+        // drawing rectangles
+        for color in colors {
+            let rectangle = gtk::DrawingArea::new();
+            rectangle.set_content_width(10);
+            rectangle.set_content_height(100);
+            rectangle.set_draw_func(move |_, cr, _width, _height| {
+                cr.set_source_rgb(color[0] as f64 / 255.0, color[1] as f64 / 255.0, color[2] as f64 / 255.0);
+                cr.paint();
+            });
+            color_list.append(&rectangle);
+        }
+
+        main_box.append(&color_list);
+
+        window.set_child(Some(&main_box));
 
         window.present();
     });
 
     app.run()
 }
-
-// TODO: Canvas
-// TODO: Show color scheme
-// TODO: Divided by some white space
 // TODO: Graphical interface?
+// TODO: Only colors, that are diff // some threshold?
