@@ -1,19 +1,21 @@
 use image::Rgba;
 use std::collections::HashMap;
+use std::env;
 
 
 fn main() {
-    let image_colors = load_image_colors("soho.jpg");
+    let args: Vec<String> = env::args().collect();
+    let image_colors = load_image_colors(&args[1]);
     find_dominant_colors(image_colors);
 }
 
-// argument funkce & návratový typ
+// argument of function & return type
 fn load_image_colors(str_path : &str) -> Vec<Rgba<u8>> {
     println!("Opening {}...", str_path);
     let img = image::open(str_path).unwrap();
     println!("Image {} loaded succesfully...", str_path);
-    //load pixels
 
+    //load pixels
     let mut pixel_colors: Vec<Rgba<u8>> = Vec::new();
     for (_x, _y, pixel) in img.to_rgba8().enumerate_pixels() {
         pixel_colors.push(*pixel);
@@ -52,3 +54,7 @@ fn find_dominant_colors(pixel_colors: Vec<Rgba<u8>>){
     }
 }
 
+// TODO: Canvas
+// TODO: Show color scheme
+// TODO: Divided by some white space
+// TODO: Graphical interface?
