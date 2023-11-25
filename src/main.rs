@@ -1,11 +1,20 @@
 use image::Rgba;
 use std::collections::HashMap;
-use std::env;
+//use std::env;
+
+use gtk4 as gtk;
+use gtk::prelude::*;
+use gtk::{glib, Application, ApplicationWindow};
+
 
 
 fn main() {
-    let args: Vec<String> = env::args().collect();
-    let image_colors = load_image_colors(&args[1]);
+    let filename: &str = "soho.jpg";
+    // terminal approach
+    //let args: Vec<String> = env::args().collect();
+    // load canvas with image
+    canvas(filename.to_string());
+    let image_colors = load_image_colors(filename);
     find_dominant_colors(image_colors);
 }
 
@@ -52,6 +61,34 @@ fn find_dominant_colors(pixel_colors: Vec<Rgba<u8>>){
     for (key, value) in colors_vec.iter().take(100) {
         println!("{:?}: {}", key, value);
     }
+}
+
+// GTK4
+// .dektop file
+fn canvas(filename: String) -> glib::ExitCode {
+    let app = Application::builder()
+        .application_id("org.example.ICFA")
+        .build();
+
+    app.connect_activate(move |app| {
+        // We create the main window.
+        let window = ApplicationWindow::builder()
+            .application(app)
+            .default_width(600)
+            .default_height(400)
+            .title("Image Color Frequency Analyzer")
+            .build();
+
+        // Create a new Image widget and set the image file.
+        let image = gtk::Image::from_file(&filename);
+
+        // Add the image to the window.
+        window.set_child(Some(&image));
+
+        window.present();
+    });
+
+    app.run()
 }
 
 // TODO: Canvas
